@@ -91,6 +91,8 @@ function renderAxis(ctx, width, height) {
 function drawGalaxy() {
   let RENDER_AXIS = false;
   let RENDER_ARMS = false;
+  let RENDER_CLUSTERS = false;
+  let RENDER_STARS = true;
 
   var canvas = document.getElementById("my_canvas");
   var ctx = canvas.getContext("2d");
@@ -139,7 +141,9 @@ function drawGalaxy() {
           y: coordY,
           r: clusterRadius
         })
-        drawCircle(ctx, coordX, coordY, clusterRadius);
+        if (RENDER_CLUSTERS) {
+          drawCircle(ctx, coordX, coordY, clusterRadius);
+        }
       }
     }
 
@@ -156,10 +160,31 @@ function drawGalaxy() {
           y: coordY,
           r: clusterRadius
         })
-        drawCircle(ctx, coordX, coordY, clusterRadius);
+        if (RENDER_CLUSTERS) {
+          drawCircle(ctx, coordX, coordY, clusterRadius);
+        }
       }
     }
   })
+
+  let starList = Array();
+
+  // Draw cluster stars
+  clustersList.forEach(i => {
+    let clusterDensity = randomInRange(12, 20) / 1000;
+    let clusterArea = Math.PI * Math.pow(i.r, 2);
+    let numStars = Math.ceil(clusterArea * clusterDensity)
+    for (const n of Array(numStars).keys()) {
+      let x = randomInRange(i.x - i.r, i.x + i.r);
+      let y = randomInRange(i.y - i.r, i.y + i.r);
+      if (pointDistance(x, y, i.x, i.y) < i.r) {
+        starList.push({x, y});
+        if (RENDER_STARS) {
+          drawPoint(ctx, x, y);
+        }
+      }
+    }
+  });
 
   if (RENDER_ARMS) {
     // Trace first arm
