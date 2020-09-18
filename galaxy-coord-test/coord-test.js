@@ -5,8 +5,18 @@ let height = 1200;
 let centerX = width/2;
 let centerY = height/2;
 
-let MIN_STAR_DISTANCE = 3;
-let STAR_DENSITY_ARM = 4;
+let RENDER_AXIS = false;
+let RENDER_ARMS = false;
+let RENDER_CLUSTERS = false;
+let RENDER_STARS = true;
+let RENDER_STARS_ARM = true;
+let RENDER_STARS_GENERAL = true;
+
+let MIN_STAR_DISTANCE = 2;
+let STAR_DENSITY_GENERAL = 4;
+let STAR_DENSITY_ARM = 6;
+let STAR_DENSITY_CLUSTER_MIN = 12;
+let STAR_DENSITY_CLUSTER_MAX = 20;
 
 function drawPoint(ctx, coord_x, coord_y) {
   ctx.beginPath();
@@ -128,6 +138,33 @@ function generateArmStars(armPoints, starList) {
   return armStars;
 }
 
+function generateGeneralStars(radius, starList) {
+  let circleStars = Array();
+
+  let density = STAR_DENSITY_GENERAL / 1000;
+  let area = Math.PI * Math.pow(radius, 2);
+  let numStars = Math.ceil(area * density);
+
+  for (const n of Array(numStars).keys()) {
+    for (const na of Array(50).keys()) {
+      // Attempt to place the star up to 50 times
+      let x = randomInRange(centerX - radius, centerX + radius);
+      let y = randomInRange(centerY - radius, centerY + radius);
+
+      let isInCircle = pointDistance(x, y, centerX, centerY) < radius;
+      let isNotCramped = starList.reduce((acc, cur) => acc && pointDistance(x, y, cur.x, cur.y) > MIN_STAR_DISTANCE, true);
+      // If the distance to the point is less than the radius of the cluster
+      // then we should save it
+      if (isInCircle && isNotCramped) {
+        circleStars.push({x, y});
+        break
+      }
+    }
+  }
+
+  return circleStars;
+}
+
 function pointDistance(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2))
 }
@@ -175,10 +212,10 @@ function renderAxis(ctx, width, height) {
 }
 
 function drawGalaxy() {
-  let RENDER_AXIS = false;
-  let RENDER_ARMS = false;
-  let RENDER_CLUSTERS = false;
-  let RENDER_STARS = true;
+  // let RENDER_AXIS = false;
+  // let RENDER_ARMS = false;
+  // let RENDER_CLUSTERS = false;
+  // let RENDER_STARS = true;
 
   var canvas = document.getElementById("my_canvas");
   var ctx = canvas.getContext("2d");
@@ -308,7 +345,7 @@ function drawGalaxy() {
 
   // Generate stars in clusters
   clustersList.forEach(i => {
-    let clusterDensity = randomInRange(12, 20) / 1000;
+    let clusterDensity = randomInRange(STAR_DENSITY_CLUSTER_MIN, STAR_DENSITY_CLUSTER_MAX) / 1000;
     let clusterArea = Math.PI * Math.pow(i.r, 2);
     let numStars = Math.ceil(clusterArea * clusterDensity)
     let clusterStars = Array();
@@ -332,13 +369,21 @@ function drawGalaxy() {
   });
 
   // Generate stars in arms
-  let arm1Stars = generateArmStars(arm1Points, starList);
-  let arm2Stars = generateArmStars(arm2Points, starList);
-  starList = starList.concat(arm1Stars);
-  starList = starList.concat(arm2Stars);
+  if (RENDER_STARS_ARM) {
+    let arm1Stars = generateArmStars(arm1Points, starList);
+    let arm2Stars = generateArmStars(arm2Points, starList);
+    starList = starList.concat(arm1Stars);
+    starList = starList.concat(arm2Stars);
+  }
 
   // Generate stars in galactic circle
+  if (RENDER_STARS_GENERAL) {
+    let circleRadius = Math.abs(arm1Points.center[arm1Points.center.length-1].r);
+    let generalStars = generateGeneralStars(circleRadius, starList);
+    starList = starList.concat(generalStars);
+  }
 
+  // Draw the stars on the map
   if (RENDER_STARS) {
     starList.forEach(({x, y}) => drawPoint(ctx, x, y));
   }
