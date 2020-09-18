@@ -26,3 +26,13 @@ Density values here represent N/1000 stars/pixel for a given region. Finding a c
 * `STAR_DENSITY_ARM`: Star dentity for stars in the galaxy arms, but not in the star clusters
 * `STAR_DENSITY_CLUSTER_MIN`: Minimum boundry for star cluster density
 * `STAR_DENSITY_CLUSTER_MAX`: Maximum boundry for star cluster density
+
+### Images
+
+The following are a couple examples of the resulting maps.
+
+This first image is with the default settings
+![](https://i.imgur.com/x4KtAum.png)
+
+This second image is with cluster density significantly increased
+![](https://i.imgur.com/Vav7PI6.png)
