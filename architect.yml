@@ -1,0 +1,78 @@
+
+name: brahm-testing/lambda-galaxy
+description: tasks for creating & invoking a lambda for generating a galaxy
+
+parameters:
+  lambda_host:
+    required: false
+    description: the hostname for the lambda service
+  lambda_port:
+    required: true
+    default: 80
+  lambda_region:
+    required: true
+    default: us-east-2
+    description: the lambda region to interact with
+  function_name:
+    required: true
+    description: the name for the function on lambda
+  lambda_role:
+    required: true
+    default: foobar
+    description: the role the lambda will be executed as
+
+services:
+  lambda:
+    image: localstack/localstack:0.12.17.5
+    interfaces:
+      lambda:
+        host: ${{ parameters.lambda_host }}
+        port: ${{ parameters.lambda_port }}
+    environment:
+      SERVICES: lambda
+    debug:
+      interfaces:
+        lambda:
+          port: 4566
+
+tasks:
+  create-function:
+    schedule: ""
+    build:
+      context: .
+    command: >-
+      --region ${{ parameters.lambda_region }}
+      --endpoint ${{ services.lambda.interfaces.lambda.url }}
+      lambda create-function
+      --zip-file fileb:///root/lambda.zip
+      --function-name ${{ parameters.function_name }}
+      --runtime nodejs12.x
+      --role ${{ parameters.lambda_role }}
+      --handler lambda.handler
+    depends_on:
+      - lambda
+    debug:
+      volumes:
+        aws_credentials:
+          description: Mount aws credentials into the aws-cli
+          host_path: /Users/sk4ly/.aws
+          mount_path: /root/.aws
+
+  generate:
+    schedule: ""
+    image: amazon/aws-cli:2.1.32
+    command: >-
+      --region ${{ parameters.lambda_region }}
+      --endpoint ${{ services.lambda.interfaces.lambda.url }}
+      lambda invoke
+      --function-name ${{ parameters.function_name }}
+      --log-type none
+      /dev/stdout
+    depends_on:
+      - lambda
+    debug:
+      volumes:
+        aws_credentials:
+          description: Mount aws credentials into the aws-cli
+          host_path: /Users/sk4ly/.aws
+          mount_path: /root/.aws
