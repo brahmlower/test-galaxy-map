@@ -6,16 +6,13 @@ parameters:
   lambda_host:
     required: false
     description: the hostname for the lambda service
-  lambda_port:
-    required: true
-    default: 80
   lambda_region:
     required: true
     default: us-east-2
     description: the lambda region to interact with
   function_name:
-    required: true
-    description: the name for the function on lambda
+    default: galaxy
+    description: the name for the lambda function
   lambda_role:
     required: true
     default: foobar
@@ -27,12 +24,14 @@ services:
     interfaces:
       lambda:
         host: ${{ parameters.lambda_host }}
-        port: ${{ parameters.lambda_port }}
+        protocol: https
+        port: 443
     environment:
       SERVICES: lambda
     debug:
       interfaces:
         lambda:
+          protocol: http
           port: 4566
 
 tasks:
@@ -47,10 +46,18 @@ tasks:
       --zip-file fileb:///root/lambda.zip
       --function-name ${{ parameters.function_name }}
       --runtime nodejs12.x
+      --timeout 30
+      --memory-size 512
       --role ${{ parameters.lambda_role }}
       --handler lambda.handler
     depends_on:
       - lambda
+    # mounting local dir into prod config just for local testing
+    volumes:
+      aws_credentials:
+        description: Mount aws credentials into the aws-cli
+        host_path: /Users/sk4ly/.aws
+        mount_path: /root/.aws
     debug:
       volumes:
         aws_credentials:
@@ -66,10 +73,16 @@ tasks:
       --endpoint ${{ services.lambda.interfaces.lambda.url }}
       lambda invoke
       --function-name ${{ parameters.function_name }}
-      --log-type none
+      --log-type None
       /dev/stdout
     depends_on:
       - lambda
+    # mounting local dir into prod config just for local testing
+    volumes:
+      aws_credentials:
+        description: Mount aws credentials into the aws-cli
+        host_path: /Users/sk4ly/.aws
+        mount_path: /root/.aws
     debug:
       volumes:
         aws_credentials:
